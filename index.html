@@ -16,6 +16,7 @@
       --opponent-team-bg: #fce4ec;
       --opponent-team-border: #f48fb1;
     }
+
     body {
       font-family: sans-serif;
       margin: 0;
@@ -23,11 +24,13 @@
       color: var(--fg);
       padding-bottom: 140px;
     }
+
     .team {
       display: flex;
       flex-direction: column;
       margin: 10px;
     }
+
     .pokemon {
       width: calc(100% - 20px);
       margin: 10px auto;
@@ -38,16 +41,20 @@
       border: 1px solid var(--your-team-border);
       color: var(--fg);
     }
+
     .opponent-team .pokemon {
       background: var(--opponent-team-bg);
       border: 1px solid var(--opponent-team-border);
+      color: var(--fg);
     }
+
     .pokemon > div {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
     }
+
     .pokemon > div > input[list],
     .pokemon > div > input[type="number"],
     .pokemon > div > input[type="range"] {
@@ -61,17 +68,34 @@
       border-radius: 4px;
       padding: 6px;
       font-size: 16px;
-      touch-action: manipulation;
+      touch-action: auto;
+      pointer-events: auto;
+      -webkit-appearance: none;
     }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #2196F3;
+      cursor: pointer;
+      margin-top: -10px;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: #ccc;
+      border-radius: 2px;
+    }
+
     .pokemon > div > span {
       white-space: nowrap;
       margin-right: 6px;
       flex-shrink: 0;
     }
-    input[type=range] {
-      width: 100%;
-      touch-action: manipulation;
-    }
+
     button {
       background: var(--button-bg);
       color: white;
@@ -81,9 +105,11 @@
       cursor: pointer;
       padding: 10px;
     }
+
     button:hover {
       background: var(--button-hover);
     }
+
     .fixed-footer {
       position: fixed;
       bottom: 0;
@@ -95,6 +121,7 @@
       z-index: 1000;
       color: var(--fg);
     }
+
     .toggle-switch {
       position: fixed;
       top: 10px;
@@ -107,9 +134,11 @@
       user-select: none;
       gap: 8px;
     }
+
     .toggle-switch input {
       display: none;
     }
+
     .toggle-switch label {
       background-color: #ccc;
       border-radius: 34px;
@@ -119,6 +148,7 @@
       position: relative;
       width: 48px;
     }
+
     .toggle-switch label::after {
       background-color: white;
       border-radius: 50%;
@@ -130,35 +160,52 @@
       transition: 0.3s;
       width: 20px;
     }
+
     .toggle-switch input:checked + label {
       background-color: #66bb6a;
     }
+
     .toggle-switch input:checked + label::after {
       transform: translateX(24px);
     }
+
     h1 {
       margin: 10px;
       font-size: 24px;
     }
+
     h2 {
       margin-top: 0;
       font-size: 20px;
     }
+
     @media (max-width: 600px) {
-      h1 { font-size: 20px; margin: 8px; }
-      h2 { font-size: 18px; }
+      h1 {
+        font-size: 20px;
+        margin: 8px;
+      }
+
+      h2 {
+        font-size: 18px;
+      }
+
       .pokemon > div {
         flex-direction: column;
         align-items: stretch;
       }
-      .pokemon > div > input {
+
+      .pokemon > div > input[list],
+      .pokemon > div > input[type="number"],
+      .pokemon > div > input[type="range"] {
         max-width: 100%;
         min-width: auto;
       }
+
       .toggle-switch {
         font-size: 13px;
         gap: 6px;
       }
+
       button {
         font-size: 14px;
         padding: 8px;
@@ -169,25 +216,21 @@
 <body>
   <div class="toggle-switch">
     <span>ダークモード切替</span>
-    <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+    <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
     <label for="themeToggle"></label>
   </div>
-
   <h1>TOD判定ツール</h1>
   <datalist id="pokemon-list"></datalist>
-
   <div class="team your-team" id="yourTeam">
     <h2>自分のポケモン</h2>
   </div>
   <div class="team opponent-team" id="opponentTeam">
     <h2>相手のポケモン</h2>
   </div>
-
   <div class="fixed-footer">
     <button onclick="judge()">判定する</button>
     <h2 id="result"></h2>
   </div>
-
   <script>
     const LEVEL = 50;
     const IV = 31;
@@ -207,12 +250,12 @@
         div.className = 'pokemon';
         div.innerHTML = `
           <div>
-            <input list="pokemon-list" placeholder="ポケモン名（カタカナ）" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})" />
+            <input list="pokemon-list" placeholder="ポケモン名（カタカナ）" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})">
             <span>努力値:</span>
-            <input type="range" id="${teamId}-ev-${i}" value="0" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})" />
-            <input type="number" id="${teamId}-ev-val-${i}" value="0" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})" />
-            <span>最大HP:</span> <input type="number" id="${teamId}-max-${i}" placeholder="自動計算" />
-            <span>現在HP:</span> <input type="number" id="${teamId}-current-${i}" value="0" />
+            <input type="range" id="${teamId}-ev-${i}" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})">
+            <input type="number" id="${teamId}-ev-val-${i}" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})">
+            <span>最大HP:</span> <input type="number" id="${teamId}-max-${i}" placeholder="自動計算">
+            <span>現在HP:</span> <input type="number" id="${teamId}-current-${i}">
           </div>
         `;
         container.appendChild(div);
@@ -220,8 +263,8 @@
     }
 
     function syncEv(teamId, i) {
-      const range = document.getElementById(`${teamId}-ev-${i}`);
-      const input = document.getElementById(`${teamId}-ev-val-${i}`);
+      let range = document.getElementById(`${teamId}-ev-${i}`);
+      let input = document.getElementById(`${teamId}-ev-val-${i}`);
       let raw = document.activeElement === range ? parseInt(range.value) : parseInt(input.value);
       if (isNaN(raw)) raw = 0;
       if (raw <= 4) raw = [0, 4].includes(raw) ? raw : 4;
@@ -248,18 +291,24 @@
     function judge() {
       const you = getTotals('yourTeam');
       const opp = getTotals('opponentTeam');
-      const youP = (you.cur / you.max) * 100 || 0;
-      const oppP = (opp.cur / opp.max) * 100 || 0;
+      const youP = you.cur / you.max * 100 || 0;
+      const oppP = opp.cur / opp.max * 100 || 0;
       let result = '';
       if (youP > oppP) result = '勝ち';
       else if (youP < oppP) result = '負け';
-      else result = you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け';
-      document.getElementById('result').textContent = `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
+      else {
+        result = you.max > opp.max ? '勝ち' :
+                 you.max < opp.max ? '負け' :
+                 '引き分け';
+      }
+      document.getElementById('result').textContent =
+        `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
     }
 
     function toKatakana(str) {
       return str.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
     }
+
     function toHiragana(str) {
       return str.replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
     }
