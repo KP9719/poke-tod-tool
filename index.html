@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Poke-TOD判定ツール</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --fg: #000;
+      --card-bg: #fff;
+      --button-bg: #2196F3;
+      --button-hover: #1976D2;
+      --your-team-bg: #e3f2fd;
+      --your-team-border: #90caf9;
+      --opponent-team-bg: #fce4ec;
+      --opponent-team-border: #f48fb1;
+    }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      padding-bottom: 140px;
+    }
+    .team {
+      display: flex;
+      flex-direction: column;
+      margin: 10px;
+    }
+    .pokemon {
+      width: calc(100% - 20px);
+      margin: 10px auto;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: var(--your-team-bg);
+      border: 1px solid var(--your-team-border);
+      color: var(--fg);
+    }
+    .opponent-team .pokemon {
+      background: var(--opponent-team-bg);
+      border: 1px solid var(--opponent-team-border);
+    }
+    .pokemon > div {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .pokemon > div > input[list],
+    .pokemon > div > input[type="number"],
+    .pokemon > div > input[type="range"] {
+      flex: 1 1 auto;
+      min-width: 80px;
+      max-width: 120px;
+      box-sizing: border-box;
+      background: var(--card-bg);
+      color: var(--fg);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px;
+      font-size: 16px;
+      touch-action: manipulation;
+    }
+    .pokemon > div > span {
+      white-space: nowrap;
+      margin-right: 6px;
+      flex-shrink: 0;
+    }
+    input[type=range] {
+      width: 100%;
+      touch-action: manipulation;
+    }
+    button {
+      background: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 10px;
+    }
+    button:hover {
+      background: var(--button-hover);
+    }
+    .fixed-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      padding: 10px;
+      box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
+      z-index: 1000;
+      color: var(--fg);
+    }
+    .toggle-switch {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      color: var(--fg);
+      font-size: 14px;
+      user-select: none;
+      gap: 8px;
+    }
+    .toggle-switch input {
+      display: none;
+    }
+    .toggle-switch label {
+      background-color: #ccc;
+      border-radius: 34px;
+      cursor: pointer;
+      display: inline-block;
+      height: 24px;
+      position: relative;
+      width: 48px;
+    }
+    .toggle-switch label::after {
+      background-color: white;
+      border-radius: 50%;
+      content: "";
+      height: 20px;
+      left: 2px;
+      position: absolute;
+      top: 2px;
+      transition: 0.3s;
+      width: 20px;
+    }
+    .toggle-switch input:checked + label {
+      background-color: #66bb6a;
+    }
+    .toggle-switch input:checked + label::after {
+      transform: translateX(24px);
+    }
+    h1 {
+      margin: 10px;
+      font-size: 24px;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 20px; margin: 8px; }
+      h2 { font-size: 18px; }
+      .pokemon > div {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .pokemon > div > input {
+        max-width: 100%;
+        min-width: auto;
+      }
+      .toggle-switch {
+        font-size: 13px;
+        gap: 6px;
+      }
+      button {
+        font-size: 14px;
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toggle-switch">
+    <span>ダークモード切替</span>
+    <input type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+    <label for="themeToggle"></label>
+  </div>
+
+  <h1>TOD判定ツール</h1>
+  <datalist id="pokemon-list"></datalist>
+
+  <div class="team your-team" id="yourTeam">
+    <h2>自分のポケモン</h2>
+  </div>
+  <div class="team opponent-team" id="opponentTeam">
+    <h2>相手のポケモン</h2>
+  </div>
+
+  <div class="fixed-footer">
+    <button onclick="judge()">判定する</button>
+    <h2 id="result"></h2>
+  </div>
+
+  <script>
+    const LEVEL = 50;
+    const IV = 31;
+    const baseHpData = {
+      'フシギダネ': 45,
+      'ヒトカゲ': 39,
+      'ゼニガメ': 44,
+      'ピカチュウ': 35,
+      'ゲンガー': 60,
+      'カビゴン': 160
+    };
+
+    function createTeam(teamId) {
+      const container = document.getElementById(teamId);
+      for (let i = 0; i < 3; i++) {
+        const div = document.createElement('div');
+        div.className = 'pokemon';
+        div.innerHTML = `
+          <div>
+            <input list="pokemon-list" placeholder="ポケモン名（カタカナ）" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})" />
+            <span>努力値:</span>
+            <input type="range" id="${teamId}-ev-${i}" value="0" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})" />
+            <input type="number" id="${teamId}-ev-val-${i}" value="0" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})" />
+            <span>最大HP:</span> <input type="number" id="${teamId}-max-${i}" placeholder="自動計算" />
+            <span>現在HP:</span> <input type="number" id="${teamId}-current-${i}" value="0" />
+          </div>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function syncEv(teamId, i) {
+      const range = document.getElementById(`${teamId}-ev-${i}`);
+      const input = document.getElementById(`${teamId}-ev-val-${i}`);
+      let raw = document.activeElement === range ? parseInt(range.value) : parseInt(input.value);
+      if (isNaN(raw)) raw = 0;
+      if (raw <= 4) raw = [0, 4].includes(raw) ? raw : 4;
+      else raw = Math.round((raw - 4) / 8) * 8 + 4;
+      raw = Math.min(252, raw);
+      range.value = raw;
+      input.value = raw;
+      const name = document.getElementById(`${teamId}-name-${i}`).value.trim();
+      const base = baseHpData[name];
+      if (!base) return;
+      const hp = Math.floor((2 * base + IV + Math.floor(raw / 4)) * LEVEL / 100) + LEVEL + 10;
+      document.getElementById(`${teamId}-max-${i}`).value = hp;
+    }
+
+    function getTotals(teamId) {
+      let max = 0, cur = 0;
+      for (let i = 0; i < 3; i++) {
+        max += Number(document.getElementById(`${teamId}-max-${i}`).value) || 0;
+        cur += Number(document.getElementById(`${teamId}-current-${i}`).value) || 0;
+      }
+      return { max, cur };
+    }
+
+    function judge() {
+      const you = getTotals('yourTeam');
+      const opp = getTotals('opponentTeam');
+      const youP = (you.cur / you.max) * 100 || 0;
+      const oppP = (opp.cur / opp.max) * 100 || 0;
+      let result = '';
+      if (youP > oppP) result = '勝ち';
+      else if (youP < oppP) result = '負け';
+      else result = you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け';
+      document.getElementById('result').textContent = `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
+    }
+
+    function toKatakana(str) {
+      return str.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+    }
+    function toHiragana(str) {
+      return str.replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+    }
+
+    document.addEventListener('input', function (e) {
+      if (e.target.tagName === 'INPUT' && e.target.getAttribute('list') === 'pokemon-list') {
+        const input = e.target;
+        const value = input.value;
+        const kana = toKatakana(value);
+        const list = document.getElementById('pokemon-list');
+        for (const option of list.children) {
+          option.hidden = !option.value.startsWith(kana) && !option.getAttribute('data-kana').startsWith(value);
+        }
+      }
+    });
+
+    createTeam('yourTeam');
+    createTeam('opponentTeam');
+
+    const datalist = document.getElementById('pokemon-list');
+    Object.keys(baseHpData).forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.setAttribute('data-kana', toHiragana(name));
+      datalist.appendChild(option);
+    });
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const currentBg = getComputedStyle(root).getPropertyValue('--bg').trim();
+      if (currentBg === '#f9f9f9') {
+        root.style.setProperty('--bg', '#1e1e1e');
+        root.style.setProperty('--fg', '#ffffff');
+        root.style.setProperty('--card-bg', '#2e2e2e');
+        root.style.setProperty('--button-bg', '#4444aa');
+        root.style.setProperty('--button-hover', '#6666cc');
+        root.style.setProperty('--your-team-bg', '#3a4f6a');
+        root.style.setProperty('--your-team-border', '#6ea7d2');
+        root.style.setProperty('--opponent-team-bg', '#5b3943');
+        root.style.setProperty('--opponent-team-border', '#ce8da2');
+      } else {
+        root.style.setProperty('--bg', '#f9f9f9');
+        root.style.setProperty('--fg', '#000000');
+        root.style.setProperty('--card-bg', '#ffffff');
+        root.style.setProperty('--button-bg', '#2196F3');
+        root.style.setProperty('--button-hover', '#1976D2');
+        root.style.setProperty('--your-team-bg', '#e3f2fd');
+        root.style.setProperty('--your-team-border', '#90caf9');
+        root.style.setProperty('--opponent-team-bg', '#fce4ec');
+        root.style.setProperty('--opponent-team-border', '#f48fb1');
+      }
+    }
+  </script>
+</body>
+</html>
