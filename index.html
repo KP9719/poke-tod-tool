@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Poke-TOD判定ツール</title>
+  <title>TOD判定ツール</title>
   <style>
     :root {
       --bg: #f9f9f9;
@@ -361,6 +361,15 @@
         root.style.setProperty('--opponent-team-border', '#f48fb1');
       }
     }
+    
+    // iOS Safari タッチ操作対応（スライダー）
+    document.addEventListener('DOMContentLoaded', () => {
+      const sliders = document.querySelectorAll('input[type="range"]');
+      sliders.forEach(slider => {
+        slider.addEventListener('touchstart', () => {}, { passive: false });
+        slider.addEventListener('touchmove', () => {}, { passive: false });
+      });
+    });
   </script>
 </body>
 </html>
