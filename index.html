@@ -25,25 +25,6 @@
       padding-bottom: 140px;
     }
 
-    .tabs {
-      display: flex;
-      justify-content: center;
-      margin-top: 10px;
-    }
-
-    .tabs button {
-      padding: 10px 20px;
-      border: 1px solid #ccc;
-      border-bottom: none;
-      cursor: pointer;
-      background: var(--card-bg);
-    }
-
-    .tabs button.active {
-      background: var(--button-bg);
-      color: white;
-    }
-
     .team {
       display: none;
       flex-direction: column;
@@ -70,23 +51,66 @@
       border: 1px solid var(--opponent-team-border);
     }
 
-    .pokemon > div {
+    .pokemon-row {
       display: flex;
       flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .hp-row {
+      display: flex;
       gap: 8px;
       align-items: center;
     }
 
-    .pokemon input[list], .pokemon input[type="number"] {
+    .pokemon input[type="text"],
+    .pokemon input[type="number"] {
+      flex: 1;
       min-width: 80px;
       max-width: 120px;
+      box-sizing: border-box;
+      background: var(--card-bg);
+      color: var(--fg);
+      border: 1px solid #ccc;
+      border-radius: 4px;
       padding: 6px;
       font-size: 16px;
     }
 
-    .ev-options label {
-      margin-right: 10px;
-      white-space: nowrap;
+    .effort-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .effort-box label {
+      margin-right: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tab-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px;
+    }
+
+    .tab-buttons button {
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #ccc;
+      color: #000;
+      user-select: none;
+    }
+
+    .tab-buttons button.active {
+      background: var(--button-bg);
+      color: #fff;
     }
 
     .fixed-footer {
@@ -94,34 +118,46 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: var(--card-bg);
-      padding: 10px;
-      box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
-      z-index: 1000;
+      background: #fff;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .toggle-switch {
-      position: fixed;
-      top: 10px;
-      right: 10px;
+    .fixed-footer button {
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 6px;
+      background: var(--button-bg);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .pokemon-row {
+        flex-direction: column;
+      }
+      .effort-box {
+        flex-direction: row;
+      }
+      .hp-row {
+        flex-direction: row;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="toggle-switch">
-    <span>ダークモード切替</span>
-    <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
-    <label for="themeToggle"></label>
+  <div class="tab-buttons">
+    <button id="tab-your" class="active" onclick="showTeam('yourTeam')">自分</button>
+    <button id="tab-opponent" onclick="showTeam('opponentTeam')">相手</button>
   </div>
-  <h1>TOD判定ツール</h1>
-  <div class="tabs">
-    <button class="active" onclick="switchTab('yourTeam')">自分</button>
-    <button onclick="switchTab('opponentTeam')">相手</button>
-  </div>
-
-  <datalist id="pokemon-list"></datalist>
   <div class="team your-team active" id="yourTeam"></div>
   <div class="team opponent-team" id="opponentTeam"></div>
+
+  <datalist id="pokemon-list"></datalist>
 
   <div class="fixed-footer">
     <button onclick="judge()">判定する</button>
@@ -146,29 +182,44 @@
         const div = document.createElement('div');
         div.className = 'pokemon';
         div.innerHTML = `
-          <div>
-            <input list="pokemon-list" placeholder="ポケモン名" id="${teamId}-name-${i}" oninput="updateHP('${teamId}', ${i})">
-            <span>努力値:</span>
-            <div class="ev-options">
-              <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="updateHP('${teamId}', ${i})"> 0</label>
-              <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="updateHP('${teamId}', ${i})"> 4</label>
-              <label><input type="radio" name="${teamId}-ev-${i}" value="252" onchange="updateHP('${teamId}', ${i})"> 252</label>
-            </div>
-            <span>最大HP:</span> <input type="number" id="${teamId}-max-${i}" placeholder="自動計算">
-            <span>現在HP:</span> <input type="number" id="${teamId}-current-${i}">
+          <div class="pokemon-row">
+            <input
+              list="pokemon-list"
+              placeholder="ポケモン名"
+              id="${teamId}-name-${i}"
+              oninput="syncEv('${teamId}', ${i})"
+              style="max-width: 150px; background: var(--card-bg); border: 1px solid #ccc; border-radius: 4px; padding: 6px; font-size: 16px; color: var(--fg); box-sizing: border-box;"
+            >
+          </div>
+          <div class="effort-box">
+            <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="syncEv('${teamId}', ${i})"> 0</label>
+            <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="syncEv('${teamId}', ${i})"> 4</label>
+            <label><input type="radio" name="${teamId}-ev-${i}" value="252" onchange="syncEv('${teamId}', ${i})"> 252</label>
+          </div>
+          <div class="pokemon-row hp-row">
+            <span>最大HP:</span>
+            <input type="number" id="${teamId}-max-${i}" placeholder="自動" style="max-width: 60px;">
+            <span>現在HP:</span>
+            <input type="number" id="${teamId}-current-${i}" style="max-width: 60px;">
           </div>
         `;
         container.appendChild(div);
       }
     }
 
-    function updateHP(teamId, i) {
+    function syncEv(teamId, i) {
       const name = document.getElementById(`${teamId}-name-${i}`).value.trim();
-      const ev = document.querySelector(`input[name='${teamId}-ev-${i}']:checked`);
-      const evValue = ev ? parseInt(ev.value) : 0;
       const base = baseHpData[name];
       if (!base) return;
-      const hp = Math.floor((2 * base + IV + Math.floor(evValue / 4)) * LEVEL / 100) + LEVEL + 10;
+      const evRadios = document.getElementsByName(`${teamId}-ev-${i}`);
+      let ev = 0;
+      for (const radio of evRadios) {
+        if (radio.checked) {
+          ev = parseInt(radio.value);
+          break;
+        }
+      }
+      const hp = Math.floor((2 * base + IV + Math.floor(ev / 4)) * LEVEL / 100) + LEVEL + 10;
       document.getElementById(`${teamId}-max-${i}`).value = hp;
     }
 
@@ -189,36 +240,26 @@
       let result = '';
       if (youP > oppP) result = '勝ち';
       else if (youP < oppP) result = '負け';
-      else result = (you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け');
+      else {
+        result = you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け';
+      }
       document.getElementById('result').textContent =
         `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.team').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
-      const btnIndex = tabId === 'yourTeam' ? 0 : 1;
-      document.querySelectorAll('.tabs button')[btnIndex].classList.add('active');
-    }
-
-    function toggleTheme() {
-      const root = document.documentElement;
-      const dark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#f9f9f9';
-      root.style.setProperty('--bg', dark ? '#1e1e1e' : '#f9f9f9');
-      root.style.setProperty('--fg', dark ? '#ffffff' : '#000000');
-      root.style.setProperty('--card-bg', dark ? '#2e2e2e' : '#ffffff');
-      root.style.setProperty('--button-bg', dark ? '#4444aa' : '#2196F3');
-      root.style.setProperty('--button-hover', dark ? '#6666cc' : '#1976D2');
-      root.style.setProperty('--your-team-bg', dark ? '#3a4f6a' : '#e3f2fd');
-      root.style.setProperty('--your-team-border', dark ? '#6ea7d2' : '#90caf9');
-      root.style.setProperty('--opponent-team-bg', dark ? '#5b3943' : '#fce4ec');
-      root.style.setProperty('--opponent-team-border', dark ? '#ce8da2' : '#f48fb1');
+    function showTeam(id) {
+      document.getElementById('yourTeam').classList.remove('active');
+      document.getElementById('opponentTeam').classList.remove('active');
+      document.getElementById('tab-your').classList.remove('active');
+      document.getElementById('tab-opponent').classList.remove('active');
+      document.getElementById(id).classList.add('active');
+      document.getElementById('tab-' + (id === 'yourTeam' ? 'your' : 'opponent')).classList.add('active');
     }
 
     function toKatakana(str) {
       return str.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
     }
+
     function toHiragana(str) {
       return str.replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
     }
