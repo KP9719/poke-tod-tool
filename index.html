@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>TOD判定ツール</title>
+  <title>Poke-TOD判定ツール</title>
   <style>
     :root {
       --bg: #f9f9f9;
@@ -25,10 +25,33 @@
       padding-bottom: 140px;
     }
 
-    .team {
+    .tabs {
       display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .tabs button {
+      padding: 10px 20px;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      cursor: pointer;
+      background: var(--card-bg);
+    }
+
+    .tabs button.active {
+      background: var(--button-bg);
+      color: white;
+    }
+
+    .team {
+      display: none;
       flex-direction: column;
       margin: 10px;
+    }
+
+    .team.active {
+      display: flex;
     }
 
     .pokemon {
@@ -45,7 +68,6 @@
     .opponent-team .pokemon {
       background: var(--opponent-team-bg);
       border: 1px solid var(--opponent-team-border);
-      color: var(--fg);
     }
 
     .pokemon > div {
@@ -55,59 +77,16 @@
       align-items: center;
     }
 
-    .pokemon > div > input[list],
-    .pokemon > div > input[type="number"],
-    .pokemon > div > input[type="range"] {
-      flex: 1 1 auto;
+    .pokemon input[list], .pokemon input[type="number"] {
       min-width: 80px;
       max-width: 120px;
-      box-sizing: border-box;
-      background: var(--card-bg);
-      color: var(--fg);
-      border: 1px solid #ccc;
-      border-radius: 4px;
       padding: 6px;
       font-size: 16px;
-      touch-action: none; /* スライダーの横移動を優先 */
-      pointer-events: auto;
-      -webkit-appearance: none;
     }
 
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 24px;
-      width: 24px;
-      border-radius: 50%;
-      background: #2196F3;
-      cursor: pointer;
-      margin-top: -10px;
-    }
-
-    input[type=range]::-webkit-slider-runnable-track {
-      height: 4px;
-      background: #ccc;
-      border-radius: 2px;
-    }
-
-    .pokemon > div > span {
+    .ev-options label {
+      margin-right: 10px;
       white-space: nowrap;
-      margin-right: 6px;
-      flex-shrink: 0;
-    }
-
-    button {
-      background: var(--button-bg);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 10px;
-    }
-
-    button:hover {
-      background: var(--button-hover);
     }
 
     .fixed-footer {
@@ -119,97 +98,12 @@
       padding: 10px;
       box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
       z-index: 1000;
-      color: var(--fg);
     }
 
     .toggle-switch {
       position: fixed;
       top: 10px;
       right: 10px;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      color: var(--fg);
-      font-size: 14px;
-      user-select: none;
-      gap: 8px;
-    }
-
-    .toggle-switch input {
-      display: none;
-    }
-
-    .toggle-switch label {
-      background-color: #ccc;
-      border-radius: 34px;
-      cursor: pointer;
-      display: inline-block;
-      height: 24px;
-      position: relative;
-      width: 48px;
-    }
-
-    .toggle-switch label::after {
-      background-color: white;
-      border-radius: 50%;
-      content: "";
-      height: 20px;
-      left: 2px;
-      position: absolute;
-      top: 2px;
-      transition: 0.3s;
-      width: 20px;
-    }
-
-    .toggle-switch input:checked + label {
-      background-color: #66bb6a;
-    }
-
-    .toggle-switch input:checked + label::after {
-      transform: translateX(24px);
-    }
-
-    h1 {
-      margin: 10px;
-      font-size: 24px;
-    }
-
-    h2 {
-      margin-top: 0;
-      font-size: 20px;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 20px;
-        margin: 8px;
-      }
-
-      h2 {
-        font-size: 18px;
-      }
-
-      .pokemon > div {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .pokemon > div > input[list],
-      .pokemon > div > input[type="number"],
-      .pokemon > div > input[type="range"] {
-        max-width: 100%;
-        min-width: auto;
-      }
-
-      .toggle-switch {
-        font-size: 13px;
-        gap: 6px;
-      }
-
-      button {
-        font-size: 14px;
-        padding: 8px;
-      }
     }
   </style>
 </head>
@@ -220,17 +114,20 @@
     <label for="themeToggle"></label>
   </div>
   <h1>TOD判定ツール</h1>
+  <div class="tabs">
+    <button class="active" onclick="switchTab('yourTeam')">自分</button>
+    <button onclick="switchTab('opponentTeam')">相手</button>
+  </div>
+
   <datalist id="pokemon-list"></datalist>
-  <div class="team your-team" id="yourTeam">
-    <h2>自分のポケモン</h2>
-  </div>
-  <div class="team opponent-team" id="opponentTeam">
-    <h2>相手のポケモン</h2>
-  </div>
+  <div class="team your-team active" id="yourTeam"></div>
+  <div class="team opponent-team" id="opponentTeam"></div>
+
   <div class="fixed-footer">
     <button onclick="judge()">判定する</button>
     <h2 id="result"></h2>
   </div>
+
   <script>
     const LEVEL = 50;
     const IV = 31;
@@ -250,10 +147,13 @@
         div.className = 'pokemon';
         div.innerHTML = `
           <div>
-            <input list="pokemon-list" placeholder="ポケモン名（カタカナ）" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})">
+            <input list="pokemon-list" placeholder="ポケモン名" id="${teamId}-name-${i}" oninput="updateHP('${teamId}', ${i})">
             <span>努力値:</span>
-            <input type="range" id="${teamId}-ev-${i}" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})">
-            <input type="number" id="${teamId}-ev-val-${i}" min="0" max="252" step="4" oninput="syncEv('${teamId}', ${i})">
+            <div class="ev-options">
+              <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="updateHP('${teamId}', ${i})"> 0</label>
+              <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="updateHP('${teamId}', ${i})"> 4</label>
+              <label><input type="radio" name="${teamId}-ev-${i}" value="252" onchange="updateHP('${teamId}', ${i})"> 252</label>
+            </div>
             <span>最大HP:</span> <input type="number" id="${teamId}-max-${i}" placeholder="自動計算">
             <span>現在HP:</span> <input type="number" id="${teamId}-current-${i}">
           </div>
@@ -262,20 +162,13 @@
       }
     }
 
-    function syncEv(teamId, i) {
-      let range = document.getElementById(`${teamId}-ev-${i}`);
-      let input = document.getElementById(`${teamId}-ev-val-${i}`);
-      let raw = document.activeElement === range ? parseInt(range.value) : parseInt(input.value);
-      if (isNaN(raw)) raw = 0;
-      if (raw <= 4) raw = [0, 4].includes(raw) ? raw : 4;
-      else raw = Math.round((raw - 4) / 8) * 8 + 4;
-      raw = Math.min(252, raw);
-      range.value = raw;
-      input.value = raw;
+    function updateHP(teamId, i) {
       const name = document.getElementById(`${teamId}-name-${i}`).value.trim();
+      const ev = document.querySelector(`input[name='${teamId}-ev-${i}']:checked`);
+      const evValue = ev ? parseInt(ev.value) : 0;
       const base = baseHpData[name];
       if (!base) return;
-      const hp = Math.floor((2 * base + IV + Math.floor(raw / 4)) * LEVEL / 100) + LEVEL + 10;
+      const hp = Math.floor((2 * base + IV + Math.floor(evValue / 4)) * LEVEL / 100) + LEVEL + 10;
       document.getElementById(`${teamId}-max-${i}`).value = hp;
     }
 
@@ -296,19 +189,36 @@
       let result = '';
       if (youP > oppP) result = '勝ち';
       else if (youP < oppP) result = '負け';
-      else {
-        result = you.max > opp.max ? '勝ち' :
-                 you.max < opp.max ? '負け' :
-                 '引き分け';
-      }
+      else result = (you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け');
       document.getElementById('result').textContent =
         `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.team').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
+      const btnIndex = tabId === 'yourTeam' ? 0 : 1;
+      document.querySelectorAll('.tabs button')[btnIndex].classList.add('active');
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const dark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#f9f9f9';
+      root.style.setProperty('--bg', dark ? '#1e1e1e' : '#f9f9f9');
+      root.style.setProperty('--fg', dark ? '#ffffff' : '#000000');
+      root.style.setProperty('--card-bg', dark ? '#2e2e2e' : '#ffffff');
+      root.style.setProperty('--button-bg', dark ? '#4444aa' : '#2196F3');
+      root.style.setProperty('--button-hover', dark ? '#6666cc' : '#1976D2');
+      root.style.setProperty('--your-team-bg', dark ? '#3a4f6a' : '#e3f2fd');
+      root.style.setProperty('--your-team-border', dark ? '#6ea7d2' : '#90caf9');
+      root.style.setProperty('--opponent-team-bg', dark ? '#5b3943' : '#fce4ec');
+      root.style.setProperty('--opponent-team-border', dark ? '#ce8da2' : '#f48fb1');
     }
 
     function toKatakana(str) {
       return str.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
     }
-
     function toHiragana(str) {
       return str.replace(/[ァ-ン]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
     }
@@ -334,41 +244,6 @@
       option.value = name;
       option.setAttribute('data-kana', toHiragana(name));
       datalist.appendChild(option);
-    });
-
-    function toggleTheme() {
-      const root = document.documentElement;
-      const currentBg = getComputedStyle(root).getPropertyValue('--bg').trim();
-      if (currentBg === '#f9f9f9') {
-        root.style.setProperty('--bg', '#1e1e1e');
-        root.style.setProperty('--fg', '#ffffff');
-        root.style.setProperty('--card-bg', '#2e2e2e');
-        root.style.setProperty('--button-bg', '#4444aa');
-        root.style.setProperty('--button-hover', '#6666cc');
-        root.style.setProperty('--your-team-bg', '#3a4f6a');
-        root.style.setProperty('--your-team-border', '#6ea7d2');
-        root.style.setProperty('--opponent-team-bg', '#5b3943');
-        root.style.setProperty('--opponent-team-border', '#ce8da2');
-      } else {
-        root.style.setProperty('--bg', '#f9f9f9');
-        root.style.setProperty('--fg', '#000000');
-        root.style.setProperty('--card-bg', '#ffffff');
-        root.style.setProperty('--button-bg', '#2196F3');
-        root.style.setProperty('--button-hover', '#1976D2');
-        root.style.setProperty('--your-team-bg', '#e3f2fd');
-        root.style.setProperty('--your-team-border', '#90caf9');
-        root.style.setProperty('--opponent-team-bg', '#fce4ec');
-        root.style.setProperty('--opponent-team-border', '#f48fb1');
-      }
-    }
-    
-    // iOS Safari タッチ操作対応（スライダー）
-    document.addEventListener('DOMContentLoaded', () => {
-      const sliders = document.querySelectorAll('input[type="range"]');
-      sliders.forEach(slider => {
-        slider.addEventListener('touchstart', () => {}, { passive: false });
-        slider.addEventListener('touchmove', () => {}, { passive: false });
-      });
     });
   </script>
 </body>
