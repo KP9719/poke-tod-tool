@@ -58,6 +58,20 @@
       margin-bottom: 8px;
     }
 
+    .name-ev-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .effort-box-inline {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
     .hp-row {
       display: flex;
       gap: 8px;
@@ -78,17 +92,17 @@
       font-size: 16px;
     }
 
-    .effort-box {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-      align-items: center;
-    }
-
-    .effort-box label {
-      margin-right: 0;
-      cursor: pointer;
-      user-select: none;
+    .pokemon-name {
+      flex-shrink: 0;
+      min-width: 100px;
+      max-width: 150px;
+      background: var(--card-bg);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px;
+      font-size: 16px;
+      color: var(--fg);
+      box-sizing: border-box;
     }
 
     .tab-buttons {
@@ -117,31 +131,38 @@
       position: fixed;
       bottom: 0;
       left: 0;
-      right: 0;
+      width: 100%;
       background: #fff;
-      padding: 12px 16px;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      border-top: 1px solid #ccc;
+      padding: 12px;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      gap: 20px;
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
     }
 
     .fixed-footer button {
-      padding: 12px 24px;
       font-size: 18px;
-      border-radius: 6px;
+      padding: 10px 24px;
       background: var(--button-bg);
-      color: white;
+      color: #fff;
       border: none;
+      border-radius: 8px;
       cursor: pointer;
+    }
+
+    .fixed-footer button:hover {
+      background: var(--button-hover);
     }
 
     @media (max-width: 600px) {
       .pokemon-row {
         flex-direction: column;
       }
-      .effort-box {
+      .name-ev-row {
         flex-direction: row;
+        flex-wrap: nowrap;
       }
       .hp-row {
         flex-direction: row;
@@ -182,19 +203,19 @@
         const div = document.createElement('div');
         div.className = 'pokemon';
         div.innerHTML = `
-          <div class="pokemon-row">
+          <div class="pokemon-row name-ev-row">
             <input
               list="pokemon-list"
               placeholder="ポケモン名"
               id="${teamId}-name-${i}"
               oninput="syncEv('${teamId}', ${i})"
-              style="max-width: 150px; background: var(--card-bg); border: 1px solid #ccc; border-radius: 4px; padding: 6px; font-size: 16px; color: var(--fg); box-sizing: border-box;"
+              class="pokemon-name"
             >
-          </div>
-          <div class="effort-box">
-            <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="syncEv('${teamId}', ${i})"> 0</label>
-            <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="syncEv('${teamId}', ${i})"> 4</label>
-            <label><input type="radio" name="${teamId}-ev-${i}" value="252" onchange="syncEv('${teamId}', ${i})"> 252</label>
+            <div class="effort-box-inline">
+              <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="syncEv('${teamId}', ${i})"> 0</label>
+              <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="syncEv('${teamId}', ${i})"> 4</label>
+              <label><input type="radio" name="${teamId}-ev-${i}" value="252" onchange="syncEv('${teamId}', ${i})"> 252</label>
+            </div>
           </div>
           <div class="pokemon-row hp-row">
             <span>最大HP:</span>
