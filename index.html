@@ -143,8 +143,8 @@
     }
 
     .fixed-footer button {
-      font-size: 18px;
-      padding: 10px 24px;
+      font-size: 14px;
+      padding: 8px 16px;
       background: var(--button-bg);
       color: #fff;
       border: none;
@@ -154,6 +154,11 @@
 
     .fixed-footer button:hover {
       background: var(--button-hover);
+    }
+
+    #result {
+      font-size: 16px;
+      white-space: pre-line;
     }
 
     @media (max-width: 600px) {
@@ -180,7 +185,7 @@
 
   <div class="fixed-footer">
     <button onclick="judge()">判定する</button>
-    <h2 id="result"></h2>
+    <div id="result"></div>
   </div>
 
   <script>
@@ -188,78 +193,39 @@
     const IV = 31;
     let nameMap = {};
     let hpCache = {};
-    const katakanaList = [];
-
-    function normalize(input) {
-      return input.trim().toLowerCase().replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
-    }
 
     async function loadNameMap() {
       try {
         const res = await fetch('pokemon_name_map.json');
-        if (!res.ok) throw new Error('Network error');
-        nameMap = await res.json();
+        if (!res.ok) throw new Error('Network response was not ok');
+        const json = await res.json();
+        nameMap = json;
       } catch (e) {
         console.error('pokemon_name_map.json の読み込みに失敗しました:', e);
         nameMap = {
           "ピカチュウ": { base_hp: 35 },
-          "pika": { base_hp: 35 },
-          "ぴかちゅう": { base_hp: 35 }
+          "リザードン": { base_hp: 78 },
+          "カビゴン": { base_hp: 160 },
+          "ゲンガー": { base_hp: 60 },
+          "ガブリアス": { base_hp: 108 },
+          "サーナイト": { base_hp: 68 }
         };
       }
-
-      const seen = new Set();
-      for (const key in nameMap) {
-        const katakana = key.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
-        if (!seen.has(katakana)) {
-          seen.add(katakana);
-          katakanaList.push(katakana);
-        }
-      }
-
       createTeam('yourTeam');
       createTeam('opponentTeam');
     }
 
     async function fetchBaseHP(nameInput) {
-      if (!nameInput) return null;
-      const norm = normalize(nameInput);
-      for (const key in nameMap) {
-        if (normalize(key) === norm) {
-          const base = nameMap[key].base_hp;
-          hpCache[norm] = base;
-          return base;
-        }
-      }
-      return null;
+      if (hpCache[nameInput]) return hpCache[nameInput];
+      const info = nameMap[nameInput];
+      if (!info || !info.base_hp) return null;
+      hpCache[nameInput] = info.base_hp;
+      return info.base_hp;
     }
 
     async function syncEv(teamId, i) {
-      const input = document.getElementById(`${teamId}-name-${i}`);
-      const name = input.value.trim();
-
-      // Suggest list
-      const listId = `${teamId}-list-${i}`;
-      let list = document.getElementById(listId);
-      if (!list) {
-        list = document.createElement('datalist');
-        list.id = listId;
-        document.body.appendChild(list);
-        input.setAttribute('list', listId);
-      }
-
-      list.innerHTML = '';
-      if (name.length > 0) {
-        const normalized = normalize(name);
-        for (const k of katakanaList) {
-          if (normalize(k).includes(normalized)) {
-            const option = document.createElement('option');
-            option.value = k;
-            list.appendChild(option);
-          }
-        }
-      }
-
+      const nameInput = document.getElementById(`${teamId}-name-${i}`);
+      const name = nameInput.value.trim();
       const base = await fetchBaseHP(name);
       if (!base) {
         document.getElementById(`${teamId}-max-${i}`).value = '';
@@ -317,12 +283,23 @@
       const opp = getTotals('opponentTeam');
       const youP = you.cur / you.max * 100 || 0;
       const oppP = opp.cur / opp.max * 100 || 0;
+
       let result = '';
-      if (youP > oppP) result = '勝ち';
-      else if (youP < oppP) result = '負け';
-      else result = you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け';
-      document.getElementById('result').textContent =
-        `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}% → ${result}`;
+      let resultColor = '';
+
+      if (youP > oppP) {
+        result = '勝ち';
+        resultColor = '#1976d2'; // 青
+      } else if (youP < oppP) {
+        result = '負け';
+        resultColor = '#d32f2f'; // 赤
+      } else {
+        result = you.max > opp.max ? '勝ち' : you.max < opp.max ? '負け' : '引き分け';
+        resultColor = result === '引き分け' ? '#666666' : (result === '勝ち' ? '#1976d2' : '#d32f2f');
+      }
+
+      document.getElementById('result').innerHTML =
+        `自分: ${youP.toFixed(2)}% / 相手: ${oppP.toFixed(2)}%<br><span style="color: ${resultColor}">→ ${result}</span>`;
     }
 
     function showTeam(id) {
