@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>Poke-TOD判定ツール</title>
   <style>
     :root {
@@ -178,8 +178,6 @@
   <div class="team your-team active" id="yourTeam"></div>
   <div class="team opponent-team" id="opponentTeam"></div>
 
-  <datalist id="pokemon-list"></datalist>
-
   <div class="fixed-footer">
     <button onclick="judge()">判定する</button>
     <h2 id="result"></h2>
@@ -190,29 +188,32 @@
     const IV = 31;
     let nameMap = {};
     let hpCache = {};
+    const katakanaList = [];
+
+    function normalize(input) {
+      return input.trim().toLowerCase().replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+    }
 
     async function loadNameMap() {
       try {
         const res = await fetch('pokemon_name_map.json');
-        if (!res.ok) throw new Error('Network response was not ok');
+        if (!res.ok) throw new Error('Network error');
         nameMap = await res.json();
       } catch (e) {
         console.error('pokemon_name_map.json の読み込みに失敗しました:', e);
+        nameMap = {
+          "ピカチュウ": { base_hp: 35 },
+          "pika": { base_hp: 35 },
+          "ぴかちゅう": { base_hp: 35 }
+        };
       }
 
-      setupUI(); // 成功・失敗後どちらでも初期化
-    }
-
-    function setupUI() {
-      const datalist = document.getElementById('pokemon-list');
-      datalist.innerHTML = '';
       const seen = new Set();
-      for (const name in nameMap) {
-        if (!seen.has(name)) {
-          seen.add(name);
-          const option = document.createElement('option');
-          option.value = name;
-          datalist.appendChild(option);
+      for (const key in nameMap) {
+        const katakana = key.replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+        if (!seen.has(katakana)) {
+          seen.add(katakana);
+          katakanaList.push(katakana);
         }
       }
 
@@ -221,23 +222,49 @@
     }
 
     async function fetchBaseHP(nameInput) {
-      if (hpCache[nameInput]) return hpCache[nameInput];
-      const info = nameMap[nameInput];
-      if (!info || !info.base_hp) return null;
-      hpCache[nameInput] = info.base_hp;
-      return info.base_hp;
+      if (!nameInput) return null;
+      const norm = normalize(nameInput);
+      for (const key in nameMap) {
+        if (normalize(key) === norm) {
+          const base = nameMap[key].base_hp;
+          hpCache[norm] = base;
+          return base;
+        }
+      }
+      return null;
     }
 
     async function syncEv(teamId, i) {
-      const nameInput = document.getElementById(`${teamId}-name-${i}`);
-      const name = nameInput.value.trim();
-      const base = await fetchBaseHP(name);
-      const maxInput = document.getElementById(`${teamId}-max-${i}`);
-      if (!base) {
-        maxInput.value = '';
-        return;
+      const input = document.getElementById(`${teamId}-name-${i}`);
+      const name = input.value.trim();
+
+      // Suggest list
+      const listId = `${teamId}-list-${i}`;
+      let list = document.getElementById(listId);
+      if (!list) {
+        list = document.createElement('datalist');
+        list.id = listId;
+        document.body.appendChild(list);
+        input.setAttribute('list', listId);
       }
 
+      list.innerHTML = '';
+      if (name.length > 0) {
+        const normalized = normalize(name);
+        for (const k of katakanaList) {
+          if (normalize(k).includes(normalized)) {
+            const option = document.createElement('option');
+            option.value = k;
+            list.appendChild(option);
+          }
+        }
+      }
+
+      const base = await fetchBaseHP(name);
+      if (!base) {
+        document.getElementById(`${teamId}-max-${i}`).value = '';
+        return;
+      }
       const evRadios = document.getElementsByName(`${teamId}-ev-${i}`);
       let ev = 0;
       for (const radio of evRadios) {
@@ -246,9 +273,8 @@
           break;
         }
       }
-
       const hp = Math.floor((2 * base + IV + Math.floor(ev / 4)) * LEVEL / 100) + LEVEL + 10;
-      maxInput.value = hp;
+      document.getElementById(`${teamId}-max-${i}`).value = hp;
     }
 
     function createTeam(teamId) {
@@ -259,7 +285,7 @@
         div.className = 'pokemon';
         div.innerHTML = `
           <div class="pokemon-row name-ev-row">
-            <input list="pokemon-list" placeholder="ポケモン名" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})" class="pokemon-name">
+            <input placeholder="ポケモン名" id="${teamId}-name-${i}" oninput="syncEv('${teamId}', ${i})" class="pokemon-name">
             <div class="effort-box-inline">
               <label><input type="radio" name="${teamId}-ev-${i}" value="0" onchange="syncEv('${teamId}', ${i})"> 0</label>
               <label><input type="radio" name="${teamId}-ev-${i}" value="4" onchange="syncEv('${teamId}', ${i})"> 4</label>
